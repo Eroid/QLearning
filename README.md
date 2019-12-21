@@ -1,5 +1,5 @@
 # qLearning3
-Visualising qLearning. Link: https://eroid.github.io/qLearning3/
+Visualising qLearning. Link: https://eroid.github.io/QLearning/
 
 ## Keys:
 
