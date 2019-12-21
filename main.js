@@ -99,7 +99,7 @@ function updateState(state,action){
 	if(actionVec[0] === 'shoot'){
 		newState[0] = state[0]
 		newState[1] = state[1]
-		delayedReward[1] = -10
+		delayedReward[1] = -1
 	}else{
 		newState[0] = state[0] + actionVec[0]
 		newState[1] = state[1] + actionVec[1]
