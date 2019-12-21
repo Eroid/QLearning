@@ -4,7 +4,7 @@ console.log('main.js loaded')
 let learningRate = 0.1
 let discount = 0.8
 const moveCost = 0.1
-
+var delayedReward = [0]
 // World
 // let rMatrix = [[0,0,0],[0,0,0],[0,0,0]]
 // Map which shows the reward if you land on that title
@@ -22,10 +22,15 @@ const moveCost = 0.1
 // 	[0,	-1],
 // 	[0, 10]
 // ]
+// let map = [
+// 	[0,		0, -10, -10],
+// 	[-1,	-1, -10, -10],
+// 	[10, -1, -10, 100]
+// ]
 let map = [
-	[0,		0, -10, -10],
-	[-1,	-1, -10, -10],
-	[10, -1, -10, 100]
+	[0, 0],
+	[0,	0],
+	[0, 1]
 ]
 const spawn = {
 	x: 0,
@@ -33,7 +38,8 @@ const spawn = {
 }
 
 // Player Information
-let qMatrix = createQMatrix(map,4)
+const numOfActions = 5
+let qMatrix = createQMatrix(map,numOfActions)
 let state = [spawn.x,spawn.y]
 let reward = 0
 
@@ -48,17 +54,15 @@ function createQMatrix(map,numOfActions){
 }
 
 function step(){
-	for(let i=0;i<1;i++){
-		// Determine action
-		const action = getAction(state)
-		// update state & get reward
-		const previousState = state
-		const feedbackRes = feedback(state,action)
-		state = feedbackRes[0]
-		reward = feedbackRes[1]
-		// update qMatrix
-		updateQMatrix(qMatrix,previousState,state,action,reward)
-	}
+	// Determine action
+	const action = getAction(state,0.5)
+	// update state & get reward
+	const previousState = state
+	const feedbackRes = feedback(state,action)
+	state = feedbackRes[0]
+	reward = feedbackRes[1]
+	// update qMatrix
+	updateQMatrix(qMatrix,previousState,state,action,reward)
 }
 
 function updateQMatrix(qMatrix,previousState,currentState,previousAction,r){
@@ -74,20 +78,33 @@ function maxQ(qVals){
 
 function feedback(state,action){
 	const newState = updateState(state,action)
-	const reward = getReward(newState)
+	const reward = getReward(newState,action)
 	return [newState, reward]
 }
 
-function getReward(newState){
-	return map[newState[1]][newState[0]]
+function getReward(newState,action){
+	const reward = map[newState[1]][newState[0]]+delayedReward[0]
+	delayedReward[0] = delayedReward[1]
+
+	if(action === 4){
+		return reward
+	}
+	return reward
 }
 
 function updateState(state,action){
 	// Will move in direction if possible
 	const newState = new Array(2).fill(0)
 	const actionVec = actionIndexToVec(action)
-	newState[0] = state[0] + actionVec[0]
-	newState[1] = state[1] + actionVec[1]
+	if(actionVec[0] === 'shoot'){
+		newState[0] = state[0]
+		newState[1] = state[1]
+		delayedReward[1] = -10
+	}else{
+		newState[0] = state[0] + actionVec[0]
+		newState[1] = state[1] + actionVec[1]
+		delayedReward[1] = 0
+	}
 
 	if(checkStateInMap(newState,map)){
 		return newState
@@ -110,13 +127,12 @@ function checkStateInMap(state,map){
 
 // returns action
 // state: 1D array with two values
-function getAction(state){
+function getAction(state,prob){
 	// Randomly selects an action 50% of the time
-	if(Math.random() < 0.5){
+	if(Math.random() < prob){
 		// choose action randomly 
 
-		const actionIndex = ranInt(0,3)
-		const action = actionIndexToVec(actionIndex)
+		const actionIndex = ranInt(0,numOfActions-1)
 		return actionIndex
 	}else{
 		// choose action from qMatrix 
@@ -135,7 +151,6 @@ function getAction(state){
 		}
 		// Randomly select an action from list of best actions
 		const actionIndex = highestValIndex[ranInt(0,highestValIndex.length-1)]
-		const action = actionIndexToVec(actionIndex)
 		return actionIndex
 	}
 }
@@ -157,6 +172,9 @@ function actionIndexToVec(actionIndex){
 		break;
 		case 3:
 			action[1] = 1
+			break;
+		case 4:
+			action[0] = 'shoot' 
 			break;
 	}
 	return action
@@ -204,6 +222,7 @@ function initQTable(parent,map){
 			html+=`<span class="bottom">${round(qMatrix[y][x][3])}</span>`
 			html+=`<span class="left">${round(qMatrix[y][x][0])}</span>`
 			html+=`<span class="right">${round(qMatrix[y][x][1])}</span>`
+			html+=`<span>${round(qMatrix[y][x][4])}</span>`
 			html+='</td>'
 		})
 		html+='</tr>'
